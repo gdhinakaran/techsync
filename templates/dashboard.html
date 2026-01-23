@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - TechSync{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h2>
+        {% if current_user.is_manager() %}
+        All Issues
+        {% else %}
+        Issues Assigned to {{ current_user.expert_role.name if current_user.expert_role else 'You' }}
+        {% endif %}
+    </h2>
+    {% if current_user.is_manager() %}
+    <a href="{{ url_for('issues.create_issue') }}" class="btn btn-primary">New Issue</a>
+    {% endif %}
+</div>
+
+{% if issues %}
+<div class="row">
+    {% for issue in issues %}
+    <div class="col-md-6 mb-4">
+        <div class="card h-100 shadow-sm">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start mb-2">
+                    <h5 class="card-title mb-0">{{ issue.title }}</h5>
+                    <span class="badge
+                        {% if issue.status == 'open' %}bg-primary
+                        {% elif issue.status == 'in_progress' %}bg-warning
+                        {% else %}bg-success{% endif %}">
+                        {{ issue.status.replace('_', ' ').title() }}
+                    </span>
+                </div>
+                <p class="card-text text-muted small">
+                    {{ issue.description[:150] }}{% if issue.description|length > 150 %}...{% endif %}
+                </p>
+                <div class="mb-2">
+                    <small class="text-muted">Required experts:</small><br>
+                    {% for role in issue.required_expert_roles %}
+                    <span class="badge bg-secondary me-1">{{ role.name }}</span>
+                    {% endfor %}
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <small class="text-muted">
+                        Created by {{ issue.creator.username }}<br>
+                        {{ issue.created_at.strftime('%Y-%m-%d') }}
+                    </small>
+                    <a href="{{ url_for('issues.view_issue', issue_id=issue.id) }}" class="btn btn-outline-primary btn-sm">
+                        View Details
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="alert alert-info">
+    {% if current_user.is_manager() %}
+    No issues yet. <a href="{{ url_for('issues.create_issue') }}">Create your first issue</a>!
+    {% else %}
+    No issues have been assigned to your expertise area yet.
+    {% endif %}
+</div>
+{% endif %}
+{% endblock %}

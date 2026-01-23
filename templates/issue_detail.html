@@ -1,0 +1,122 @@
+{% extends "base.html" %}
+
+{% block title %}{{ issue.title }} - TechSync{% endblock %}
+
+{% block content %}
+<div class="mb-4">
+    <a href="{{ url_for('issues.dashboard') }}" class="text-decoration-none">&larr; Back to Dashboard</a>
+</div>
+
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-start mb-3">
+            <h2 class="card-title mb-0">{{ issue.title }}</h2>
+            <span class="badge
+                {% if issue.status == 'open' %}bg-primary
+                {% elif issue.status == 'in_progress' %}bg-warning
+                {% else %}bg-success{% endif %} fs-6">
+                {{ issue.status.replace('_', ' ').title() }}
+            </span>
+        </div>
+
+        <div class="mb-3">
+            <h5>Problem Description</h5>
+            <p class="card-text" style="white-space: pre-line;">{{ issue.description }}</p>
+        </div>
+
+        <div class="mb-3">
+            <h5>Required Expert Input</h5>
+            {% for role in issue.required_expert_roles %}
+            <span class="badge bg-secondary me-1">{{ role.name }}</span>
+            {% endfor %}
+        </div>
+
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">
+                Created by {{ issue.creator.username }} on {{ issue.created_at.strftime('%Y-%m-%d %H:%M') }}
+            </small>
+            {% if current_user.is_manager() %}
+            <form method="POST" action="{{ url_for('issues.update_status', issue_id=issue.id) }}" class="d-inline">
+                <select name="status" class="form-select form-select-sm d-inline-block w-auto" onchange="this.form.submit()">
+                    <option value="open" {% if issue.status == 'open' %}selected{% endif %}>Open</option>
+                    <option value="in_progress" {% if issue.status == 'in_progress' %}selected{% endif %}>In Progress</option>
+                    <option value="resolved" {% if issue.status == 'resolved' %}selected{% endif %}>Resolved</option>
+                </select>
+            </form>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- Expert Input Section -->
+{% if can_submit_input %}
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <h5 class="card-title">Your Expert Input</h5>
+        <form method="POST" action="{{ url_for('issues.submit_input', issue_id=issue.id) }}">
+            <div class="mb-3">
+                <textarea class="form-control" name="content" rows="4"
+                          placeholder="Provide your expertise and perspective on this issue. What are the key considerations from your domain? What solutions or approaches do you recommend?"
+                          required></textarea>
+            </div>
+            <button type="submit" class="btn btn-primary">Submit Your Input</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+
+<!-- AI Summary Button -->
+<div class="card shadow mb-4">
+    <div class="card-body">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <h5 class="mb-1">AI Facilitation</h5>
+                <small class="text-muted">
+                    {% if issue.has_all_expert_inputs() %}
+                    All experts have provided input. Ready for AI summary.
+                    {% else %}
+                    Waiting for all experts to provide input ({{ comments|selectattr('comment_type', 'equalto', 'input')|list|length }}/{{ issue.required_expert_roles|length }} submitted).
+                    {% endif %}
+                </small>
+            </div>
+            <form method="POST" action="{{ url_for('ai.generate_summary_route', issue_id=issue.id) }}">
+                <button type="submit" class="btn btn-success">
+                    Request AI Summary
+                </button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Comments/Thread -->
+<div class="card shadow">
+    <div class="card-header">
+        <h5 class="mb-0">Discussion Thread</h5>
+    </div>
+    <div class="card-body">
+        {% if comments %}
+        {% for comment in comments %}
+        <div class="mb-4 pb-3 {% if not loop.last %}border-bottom{% endif %}">
+            <div class="d-flex justify-content-between align-items-start mb-2">
+                <div>
+                    {% if comment.is_ai_generated %}
+                    <span class="badge bg-success me-2">AI {{ comment.comment_type.title() }}</span>
+                    {% else %}
+                    <strong>{{ comment.author.username }}</strong>
+                    {% if comment.author.expert_role %}
+                    <span class="badge bg-secondary ms-1">{{ comment.author.expert_role.name }}</span>
+                    {% endif %}
+                    {% endif %}
+                </div>
+                <small class="text-muted">{{ comment.created_at.strftime('%Y-%m-%d %H:%M') }}</small>
+            </div>
+            <div class="{% if comment.is_ai_generated %}bg-light p-3 rounded{% endif %}"
+                 style="white-space: pre-line;">{{ comment.content }}</div>
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="text-muted mb-0">No comments yet. Experts, please provide your input above.</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

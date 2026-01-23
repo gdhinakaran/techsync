@@ -1,0 +1,69 @@
+{% extends "base.html" %}
+
+{% block title %}Register - TechSync{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-md-6 col-lg-5">
+        <div class="card shadow">
+            <div class="card-body">
+                <h2 class="card-title text-center mb-4">Register</h2>
+                <form method="POST">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Username</label>
+                        <input type="text" class="form-control" id="username" name="username" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Password</label>
+                        <input type="password" class="form-control" id="password" name="password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="confirm_password" class="form-label">Confirm Password</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label for="role_type" class="form-label">Role Type</label>
+                        <select class="form-select" id="role_type" name="role_type" required onchange="toggleExpertRole()">
+                            <option value="">Select role...</option>
+                            <option value="manager">Manager</option>
+                            <option value="expert">Expert</option>
+                        </select>
+                    </div>
+                    <div class="mb-3" id="expert_role_div" style="display: none;">
+                        <label for="expert_role_id" class="form-label">Expert Specialty</label>
+                        <select class="form-select" id="expert_role_id" name="expert_role_id">
+                            <option value="">Select specialty...</option>
+                            {% for role in expert_roles %}
+                            <option value="{{ role.id }}">{{ role.name }}</option>
+                            {% endfor %}
+                        </select>
+                        {% if not expert_roles %}
+                        <small class="text-muted">No expert roles defined yet. Ask a manager to create roles.</small>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Register</button>
+                </form>
+                <p class="mt-3 text-center">
+                    Already have an account? <a href="{{ url_for('auth.login') }}">Login here</a>
+                </p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleExpertRole() {
+    const roleType = document.getElementById('role_type').value;
+    const expertDiv = document.getElementById('expert_role_div');
+    const expertSelect = document.getElementById('expert_role_id');
+
+    if (roleType === 'expert') {
+        expertDiv.style.display = 'block';
+        expertSelect.required = true;
+    } else {
+        expertDiv.style.display = 'none';
+        expertSelect.required = false;
+    }
+}
+</script>
+{% endblock %}
